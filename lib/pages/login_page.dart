@@ -1,8 +1,9 @@
-import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_chat/controllers/account_controller.dart';
 import 'package:flutter_chat/pages/home_page.dart';
 import 'package:flutter_chat/utils/firebase_util.dart';
+import 'package:hooks_riverpod/hooks_riverpod.dart';
 
 class LoginPage extends StatelessWidget {
   @override
@@ -14,17 +15,22 @@ class LoginPage extends StatelessWidget {
               child: Column(
             mainAxisSize: MainAxisSize.max,
             mainAxisAlignment: MainAxisAlignment.center,
-            children: <Widget>[FlutterLogo(size: 150), SizedBox(height: 50), _signInButton(context)],
+            children: <Widget>[FlutterLogo(size: 150), const SizedBox(height: 50), _SignInButton()],
           ))),
     );
   }
+}
 
-  Widget _signInButton(BuildContext context) {
+class _SignInButton extends ConsumerWidget {
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final controller = ref.watch(accountController.notifier);
+
     return OutlinedButton(
       onPressed: () async {
         User? user = await FirebaseUtil.signInGoogle();
         if (user != null) {
-          await _registerUser(user);
+          await controller.registerUser(user);
           Navigator.of(context).pushReplacement(
             MaterialPageRoute(
               builder: (context) {
@@ -56,19 +62,5 @@ class LoginPage extends StatelessWidget {
         ),
       ),
     );
-  }
-
-  Future _registerUser(User user) async {
-    DocumentReference ref = FirebaseFirestore.instance.collection("users").doc(user.uid);
-    DocumentSnapshot snapshot = await ref.get();
-    if (snapshot.exists) {
-      return;
-    }
-
-    return ref.set({
-      "user_name": user.displayName,
-      "user_email": user.email,
-      "user_image_url": user.photoURL,
-    });
   }
 }

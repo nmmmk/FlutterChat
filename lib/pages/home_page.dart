@@ -1,23 +1,23 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_chat/controllers/account_controller.dart';
+import 'package:hooks_riverpod/hooks_riverpod.dart';
 
-import 'account_page/account_page.dart';
-import 'chat_page/chat_page.dart';
+import 'account_page.dart';
+import 'chat_page.dart';
 
-class HomePage extends StatefulWidget {
-  @override
-  _HomePageState createState() => _HomePageState();
-}
+final _indexProvider = StateProvider((ref) => 0);
 
-class _HomePageState extends State<HomePage> {
+class HomePage extends ConsumerWidget {
   final _pageList = [ChatPage(), AccountPage()];
-  var _pageIndex = 0;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final pageIndex = ref.watch(_indexProvider).state;
+
     return Scaffold(
       body: IndexedStack(
-        index: _pageIndex,
+        index: pageIndex,
         children: _pageList,
       ),
       bottomNavigationBar: BottomNavigationBar(
@@ -25,11 +25,9 @@ class _HomePageState extends State<HomePage> {
           BottomNavigationBarItem(icon: Icon(Icons.message), label: "メッセージ"),
           BottomNavigationBarItem(icon: Icon(Icons.account_circle), label: "アカウント")
         ],
-        currentIndex: _pageIndex,
+        currentIndex: pageIndex,
         onTap: (index) {
-          setState(() {
-            _pageIndex = index;
-          });
+          ref.read(_indexProvider).state = index;
         },
       ),
     );

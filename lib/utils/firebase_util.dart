@@ -1,4 +1,7 @@
+import 'dart:io';
+
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:firebase_storage/firebase_storage.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 
 class FirebaseUtil {
@@ -33,5 +36,21 @@ class FirebaseUtil {
     }
 
     return user;
+  }
+
+  static Future<String?> uploadFile(String fileName, String fullPath) async {
+    final FirebaseStorage storage = FirebaseStorage.instance;
+    final Reference ref = storage.ref().child('user-icon').child(fileName);
+
+    final UploadTask uploadTask = ref.putFile(File(fullPath));
+
+    String? url;
+    await uploadTask.whenComplete(() async {
+      url = await ref.getDownloadURL();
+    }).catchError((onError) {
+      throw onError;
+    });
+
+    return url;
   }
 }

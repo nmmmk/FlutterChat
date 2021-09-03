@@ -1,4 +1,4 @@
-import 'package:flutter_chat/entities/account_item/account_item.dart';
+import 'package:flutter_chat/entities/account_item.dart';
 
 class ChatMessageItem {
   String key;
