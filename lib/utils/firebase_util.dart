@@ -38,13 +38,13 @@ class FirebaseUtil {
     return user;
   }
 
-  static Future<String?> uploadFile(String fileName, String fullPath) async {
+  static Future<String> uploadFile(String storedDirName, String storedFileName, String uploadFileName) async {
     final FirebaseStorage storage = FirebaseStorage.instance;
-    final Reference ref = storage.ref().child('user-icon').child(fileName);
+    final Reference ref = storage.ref().child(storedDirName).child(storedFileName);
 
-    final UploadTask uploadTask = ref.putFile(File(fullPath));
+    final UploadTask uploadTask = ref.putFile(File(uploadFileName));
 
-    String? url;
+    late String url;
     await uploadTask.whenComplete(() async {
       url = await ref.getDownloadURL();
     }).catchError((onError) {

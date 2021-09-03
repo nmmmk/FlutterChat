@@ -24,7 +24,7 @@ class LoginPage extends StatelessWidget {
 class _SignInButton extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final controller = ref.watch(accountController.notifier);
+    final controller = ref.read(accountController.notifier);
 
     return OutlinedButton(
       onPressed: () async {

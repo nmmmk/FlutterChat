@@ -6,20 +6,33 @@ import 'package:flutter_chat/entities/account_item.dart';
 import 'package:flutter_chat/utils/firebase_util.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 
-final userProvider = StateProvider((ref) => FirebaseAuth.instance.currentUser);
-final accountController = StateNotifierProvider<AccountController, AccountItem>(
-  (ref) => AccountController(),
-);
+import 'account_state.dart';
 
-class AccountController extends StateNotifier<AccountItem> {
+final userProvider = StateProvider((ref) => FirebaseAuth.instance.currentUser);
+final accountController = StateNotifierProvider<AccountController, AccountState>((ref) {
+  final uid = ref.read(userProvider).state?.uid;
+  return AccountController(uid);
+});
+
+class AccountController extends StateNotifier<AccountState> {
   final _usersCollection = FirebaseFirestore.instance.collection("users");
 
-  AccountController() : super(AccountItem(userId: "", name: "", email: "", imageUrl: ""));
+  AccountController(String? uid)
+      : super(AccountState(isLoading: true, accountItem: AccountItem(userId: "", name: "", email: "", imageUrl: ""))) {
+    _initialize(uid);
+  }
 
-  Future fetchAccountItem(String uid) async {
+  Future _initialize(String? uid) async {
+    if (uid == null) {
+      state = state.copyWith(isLoading: false);
+      return;
+    }
+
     var snapshot = await _usersCollection.doc(uid).get();
-    state = AccountItem(
+    var item = AccountItem(
         userId: uid, name: snapshot["user_name"], email: snapshot["user_email"], imageUrl: snapshot["user_image_url"]);
+
+    state = state.copyWith(isLoading: false, accountItem: item);
   }
 
   Future registerUser(User user) async {
@@ -34,25 +47,44 @@ class AccountController extends StateNotifier<AccountItem> {
       "user_email": user.email,
       "user_image_url": user.photoURL,
     });
+
+    var item = state.accountItem.copyWith(
+        userId: user.uid, name: user.displayName ?? "", email: user.email ?? "", imageUrl: user.photoURL ?? "");
+    state = state.copyWith(accountItem: item);
   }
 
-  Future updateAccount(String nickName, String filePath) async {
-    DocumentReference ref = _usersCollection.doc(state.userId);
+  Future updateAccount({String? nickName, String? filePath}) async {
+    final userId = state.accountItem.userId;
+    DocumentReference ref = _usersCollection.doc(userId);
 
-    await ref.update({
-      "user_name": nickName,
-    });
+    Map<String, String> map = {};
+    if (nickName != null) {
+      map["user_name"] = nickName;
+    }
 
-    this.state = this.state.copyWith(name: nickName);
-  }
-
-  Future<String?> _uploadIcon(String uid, File file) async {
     String? url;
+    if (filePath != null) {
+      url = await _uploadIcon(userId, File(filePath));
+      map["user_image_url"] = url;
+    }
+
+    if (map.length == 0) {
+      return;
+    }
+
+    await ref.update(map);
+
+    var item = this.state.accountItem.copyWith(name: nickName, imageUrl: url);
+    this.state = this.state.copyWith(accountItem: item);
+  }
+
+  Future<String> _uploadIcon(String uid, File file) async {
+    String url;
     try {
-      var storageFileName = '${uid}_icon';
-      url = await FirebaseUtil.uploadFile(storageFileName, file.path);
+      var storedFileName = '${uid}_icon';
+      url = await FirebaseUtil.uploadFile('user_icon', storedFileName, file.path);
     } catch (e) {
-      print(e);
+      throw e;
     }
 
     return url;

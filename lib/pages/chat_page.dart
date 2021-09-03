@@ -5,7 +5,7 @@ import 'package:flutter_chat/controllers/chat_message_controller.dart';
 import 'package:flutter_chat/entities/chat_message_item.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 
-final messageQueryProvider = StreamProvider<List<ChatMessageItem>>((ref) {
+final _messageQueryProvider = StreamProvider<List<ChatMessageItem>>((ref) {
   ref.watch(accountController);
   return ref.read(chatMessageController.notifier).chatStream;
 });
@@ -14,7 +14,7 @@ class ChatPage extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     return Scaffold(
-      appBar: AppBar(title: new Text("Sample Chat")),
+      appBar: AppBar(title: const Text("Sample Chat")),
       body: SafeArea(
           child: Container(
               child: Column(
@@ -33,9 +33,13 @@ class ChatPage extends ConsumerWidget {
 class _ChatArea extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final AsyncValue<List<ChatMessageItem>> asyncPostsQuery = ref.watch(messageQueryProvider);
+    final AsyncValue<List<ChatMessageItem>> asyncPostsQuery = ref.watch(_messageQueryProvider);
 
     return asyncPostsQuery.when(data: (item) {
+      if (item.length == 0) {
+        return Center(child: Text("データがありません"));
+      }
+
       return ListView(
           padding: const EdgeInsets.all(8.0),
           children: item.map((e) {
@@ -44,7 +48,7 @@ class _ChatArea extends ConsumerWidget {
     }, loading: () {
       return Center(child: CircularProgressIndicator());
     }, error: (e, stackTrace) {
-      return Center(child: CircularProgressIndicator());
+      return Center(child: Text(stackTrace.toString()));
     });
   }
 }
@@ -60,7 +64,9 @@ class _ChatMessage extends ConsumerWidget {
 
     return Container(
         margin: EdgeInsets.only(top: 16.0),
-        child: account.email == item.account.email ? _currentUserCommentRow(item) : _otherUserCommentRow(item));
+        child: account.accountItem.email == item.account.email
+            ? _currentUserCommentRow(item)
+            : _otherUserCommentRow(item));
   }
 
   Widget _currentUserCommentRow(ChatMessageItem data) {
@@ -129,7 +135,7 @@ class _MessageTextField extends ConsumerWidget {
               return;
             }
 
-            controller.addMessage(text, account.userId);
+            controller.addMessage(text, account.accountItem.userId);
             _textEditController.clear();
             FocusScope.of(context).requestFocus(FocusNode());
           },

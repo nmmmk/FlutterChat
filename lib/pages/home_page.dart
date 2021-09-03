@@ -1,6 +1,5 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_chat/controllers/account_controller.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 
 import 'account_page.dart';
@@ -27,7 +26,9 @@ class HomePage extends ConsumerWidget {
         ],
         currentIndex: pageIndex,
         onTap: (index) {
-          ref.read(_indexProvider).state = index;
+          if (ref.read(_indexProvider).state != index) {
+            ref.read(_indexProvider).state = index;
+          }
         },
       ),
     );
